@@ -127,3 +127,8 @@
     filter: invert(1);
   }
 }
+
+.heading{
+  font-size: 20px;
+  color: rgb(19, 200, 206);
+}

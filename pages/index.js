@@ -2,15 +2,23 @@ import { useState } from "react";
 import { Button } from "react-bootstrap";
 import * as XLSX from "xlsx";
 import { CSVLink } from "react-csv";
+import styles from '../styles/Home.module.css'
+
 let resultFile = [];
 let validEmails = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
 
 export default function Home() {
   const [input, setInput] = useState("");
   const [fileData, setFileData] = useState();
+  const [resultData, setResultData] = useState();
+
+  const downloadHandler = async () => {
+    let response = await fetch("http://localhost:1337/api/tests");
+    let result = await response.json();
+    setResultData(result.data);
+  };
   const submitHandler = (e) => {
     e.preventDefault();
-   
 
     if (input === "") {
       alert("Upload CSV file");
@@ -24,6 +32,16 @@ export default function Home() {
       }
     }
   };
+  const deleteHandler = async (deleteId) => {
+    const response = await fetch(
+      `http://localhost:1337/api/tests/${deleteId}`,
+      {
+        method: "DELETE",
+      }
+    );
+    const data = await response.json();
+    downloadHandler();
+  };
 
   const fileHandler = (e) => {
     setInput(e.target.value);
@@ -32,29 +50,46 @@ export default function Home() {
     const reader = new FileReader();
     reader.onload = (evt) => {
       const bstr = evt.target.result;
-      console.log(bstr)
+      console.log(bstr);
       const wb = XLSX.read(bstr, { type: "binary" });
       const wsname = wb.SheetNames[0];
       const ws = wb.Sheets[wsname];
-      console.log(ws)
+      console.log(ws);
       const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
-      console.log(data);
+      // console.log(data);
 
       setFileData(data);
       if (data !== undefined) {
         data.map((item) => {
-          if (
-            item[1].match(validEmails) !== null
-          ) {
+          if (item[1].match(validEmails) !== null) {
             let newData = [...item, "Valid"];
             resultFile.push([newData]);
           } else {
-            let newData = [...item, "In Valid"];
+            let newData = [...item, "InValid"];
             resultFile.push([newData]);
           }
         });
       }
-      console.log(resultFile);
+      const test = async (data) => {
+        console.log(data);
+        let response = await fetch("http://localhost:1337/api/tests", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            data: {
+              email: data.email,
+              status: data.status,
+            },
+          }),
+        });
+      };
+      resultFile.map(
+        (item) =>
+          item[0][0] !== "S.No" &&
+          test({ email: item[0][1], status: item[0][2] })
+      );
     };
     reader.readAsBinaryString(file);
   };
@@ -64,7 +99,7 @@ export default function Home() {
       <div className="row">
         <div className="d-flex justify-content-center ">
           <form>
-            <h1 style={{ fontSize: "20px" }} className="text-primary">
+            <h1 className={styles.heading} >
               validation page
             </h1>
             <input
@@ -80,7 +115,27 @@ export default function Home() {
         </div>
       </div>
       <div>
-        <CSVLink data={resultFile.flat()}>Download</CSVLink>
+        <button onClick={downloadHandler} className="btn btn-outline-secondary m-2">Download</button>
+        <table >
+          {resultData !== undefined
+            ? resultData.map((item) => {
+                return (
+                  <tr>
+                    <td style={{ border: "2px solid black" }}>
+                      {item.attributes.email}
+                    </td>
+                    <td style={{ border: "2px solid black" }}>
+                      {item.attributes.status}
+                    </td>
+                    <button className="btn btn-outline-danger" onClick={() => deleteHandler(item.id)}>
+                      Delete
+                    </button>
+                  </tr>
+                );
+              })
+            : null}
+        </table>
+        {/* <CSVLink data={resultFile.flat()}>Download</CSVLink> */}
       </div>
     </center>
   );
