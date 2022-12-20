@@ -33,7 +33,7 @@ export default function Home() {
     });
   };
   const downloadHandler = async () => {
-    let response = await fetch("http://localhost:1337/api/tests");
+    let response = await fetch("http://localhost:1337/api/tests?populate=*");
     let result = await response.json();
     setResultData(result.data);
   };
@@ -78,18 +78,18 @@ export default function Home() {
 
   const fileHandler = (e) => {
     setInput(e.target.value);
-    // console.log(e);
+ 
     const [file] = e.target.files;
     const reader = new FileReader();
     reader.onload = (evt) => {
       const bstr = evt.target.result;
-      // console.log(bstr);
+      
       const wb = XLSX.read(bstr, { type: "binary" });
       const wsname = wb.SheetNames[0];
       const ws = wb.Sheets[wsname];
-      // console.log(ws);
+    
       const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
-      // console.log(data);
+      
 
       setFileData(data);
       if (data !== undefined) {
@@ -227,7 +227,7 @@ export default function Home() {
                         </button>
                       </td>
                     </tr>
-                  );
+                  )
                 })
               : null}
           </tbody>
